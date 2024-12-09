@@ -1,8 +1,6 @@
 use rayon::prelude::*;
 use std::{fmt, fs};
 
-use crate::time_function;
-
 // const INPUT_FILE: &str = "inputs/day6.test";
 const INPUT_FILE: &str = "inputs/day6.input";
 
@@ -24,12 +22,10 @@ impl fmt::Display for Tile {
 }
 
 type Map = Vec<Vec<Tile>>;
-type LastVisitMap = Vec<Vec<Vec<(i64, i64)>>>;
 
 pub fn solve() {
-    println!("Part 1: {}", time_function!(solve_p1));
-    // Takes 30s to execute in debug mode
-    // println!("Part 2: {}", time_function!(solve_p2));
+    println!("Part 1: {}", solve_p1());
+    println!("Part 2: {}", solve_p2());
 }
 
 pub fn solve_p1() -> u64 {
@@ -95,14 +91,12 @@ pub fn solve_p1() -> u64 {
     result
 }
 
-#[allow(dead_code)]
 pub fn solve_p2() -> u64 {
     let content = fs::read_to_string(INPUT_FILE).expect("Could not read input file");
 
     let mut guard_pos: (i64, i64) = (0, 0);
     let guard_dir: (i64, i64) = (0, -1);
 
-    let mut last_visited: LastVisitMap = vec![];
     let mut map: Map = vec![];
     for (y, line) in content.lines().enumerate() {
         let row: Vec<Tile> = line
@@ -119,42 +113,57 @@ pub fn solve_p2() -> u64 {
             })
             .collect();
 
-        last_visited.push(vec![vec![]; row.len()]);
         map.push(row);
     }
 
+    let map_shared = &map;
+    let guard_pos_shared = guard_pos;
+    let guard_dir_shared = guard_dir;
+
     let x_len: usize = map[0].len();
     let y_len: usize = map.len();
-    let inbounds =
-        |(x, y)| -> bool { x >= 0 && x < (x_len as i64) && y >= 0 && y < (y_len as i64) };
 
     (0..y_len)
+        // Only gives a 3x improvement, but still better than nothing
         .into_par_iter()
         .map(|obstruction_y| {
             (0..x_len)
-                .map(|obstruction_x| {
-                    let mut guard_pos: (i64, i64) = guard_pos.clone();
-                    let mut guard_dir: (i64, i64) = guard_dir.clone();
-                    let mut map = map.clone();
-                    let mut last_visited = last_visited.clone();
-
+                .filter_map(|obstruction_x| {
                     if map[obstruction_y][obstruction_x as usize] == Tile::OBSTRUCTION {
-                        return 0;
+                        return None;
                     }
+
+                    let mut guard_pos: (i64, i64) = guard_pos_shared;
+                    let mut guard_dir: (i64, i64) = guard_dir_shared;
+                    let mut map = map_shared.clone();
+                    let mut last_visited = vec![vec![[false, false, false, false]; x_len]; y_len];
+
                     map[obstruction_y][obstruction_x as usize] = Tile::OBSTRUCTION;
                     loop {
                         let new_pos = (guard_pos.0 + guard_dir.0, guard_pos.1 + guard_dir.1);
-                        if !inbounds(new_pos) {
-                            return 0;
-                        } else if last_visited[new_pos.1 as usize][new_pos.0 as usize]
-                            .contains(&guard_dir)
+                        if new_pos.0 < 0
+                            || new_pos.0 >= (x_len as i64)
+                            || new_pos.1 < 0
+                            || new_pos.1 >= (y_len as i64)
                         {
-                            return 1;
+                            return None;
                         }
 
-                        last_visited[guard_pos.1 as usize][guard_pos.0 as usize].push(guard_dir);
+                        let nx = (new_pos.0 as usize, new_pos.1 as usize);
+                        let dir_id = match guard_dir {
+                            (1, 0) => 0,
+                            (0, -1) => 1,
+                            (-1, 0) => 2,
+                            (0, 1) => 3,
+                            _ => unreachable!(),
+                        };
 
-                        if map[new_pos.1 as usize][new_pos.0 as usize] == Tile::OBSTRUCTION {
+                        if last_visited[nx.1][nx.0][dir_id] {
+                            return Some(1);
+                        }
+
+                        last_visited[nx.1][nx.0][dir_id] = true;
+                        if map[nx.1][nx.0] == Tile::OBSTRUCTION {
                             guard_dir = match guard_dir {
                                 (1, 0) => (0, 1),
                                 (0, -1) => (1, 0),
@@ -167,8 +176,7 @@ pub fn solve_p2() -> u64 {
                         }
                     }
                 })
-                .reduce(|a, b| a + b)
-                .unwrap()
+                .sum::<u64>()
         })
-        .reduce(|| 0, |a, b| a + b)
+        .sum()
 }

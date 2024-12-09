@@ -4,14 +4,12 @@ use std::{
     fs,
 };
 
-use crate::time_function;
-
 // const INPUT_FILE: &str = "inputs/day5.test";
 const INPUT_FILE: &str = "inputs/day5.input";
 
 pub fn solve() {
-    println!("Part 1: {}", time_function!(solve_p1));
-    println!("Part 2: {}", time_function!(solve_p2));
+    println!("Part 1: {}", solve_p1());
+    println!("Part 2: {}", solve_p2());
 }
 
 pub fn solve_p1() -> u64 {
