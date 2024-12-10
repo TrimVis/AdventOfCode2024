@@ -1,4 +1,5 @@
 mod day1;
+mod day10;
 mod day2;
 mod day3;
 mod day4;
@@ -9,31 +10,53 @@ mod day8;
 mod day9;
 mod util;
 
+use colored::Colorize;
+
+fn get_day_solve_fn(day: &str) -> Option<fn()> {
+    match day {
+        "1" => Some(day1::solve),
+        "2" => Some(day2::solve),
+        "3" => Some(day3::solve),
+        "4" => Some(day4::solve),
+        "5" => Some(day5::solve),
+        "6" => Some(day6::solve),
+        "7" => Some(day7::solve),
+        "8" => Some(day8::solve),
+        "9" => Some(day9::solve),
+        "10" => Some(day10::solve),
+        "11" => None,
+        "12" => None,
+        "13" => None,
+        "14" => None,
+        "15" => None,
+        "16" => None,
+        "17" => None,
+        "18" => None,
+        "19" => None,
+        "20" => None,
+        "21" => None,
+        "22" => None,
+        "23" => None,
+        "24" => None,
+        _ => unimplemented!("The day '{}' is not supported", day),
+    }
+}
+
 fn main() {
-    println!("Day 1");
-    time_function!(day1::solve);
+    let mut days: Vec<String> = std::env::args().skip(1).collect();
+    if days.len() == 0 {
+        days = (1..=24).map(|v| v.to_string()).collect();
+    }
 
-    println!("Day 2");
-    time_function!(day2::solve);
-
-    println!("Day 3");
-    time_function!(day3::solve);
-
-    println!("Day 4");
-    time_function!(day4::solve);
-
-    println!("Day 5");
-    time_function!(day5::solve);
-
-    println!("Day 6");
-    time_function!(day6::solve);
-
-    println!("Day 7");
-    time_function!(day7::solve);
-
-    println!("Day 8");
-    time_function!(day8::solve);
-
-    println!("Day 9");
-    time_function!(day9::solve);
+    for day in days {
+        if let Some(func) = get_day_solve_fn(day.as_str()) {
+            let title = format!("{} {}", "Day".yellow(), day.green());
+            println!("\n{}", title.bold());
+            let start = std::time::Instant::now();
+            func();
+            let duration = start.elapsed();
+            let time = format!("Executed in {:?}", duration);
+            println!("{}", time.dimmed());
+        }
+    }
 }
