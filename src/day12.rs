@@ -1,6 +1,7 @@
 use std::{collections::HashSet, fs};
 
 const DIRS: [(i64, i64); 4] = [(0, -1), (1, 0), (0, 1), (-1, 0)];
+const DIRS_WDIAG: [(i64, i64); 6] = [(0, -1), (1, 0), (0, 1), (-1, 0), (1, 1), (-1, -1)];
 const INPUT_FILE: &str = "inputs/day12.test";
 // const INPUT_FILE: &str = "inputs/day12.input";
 
@@ -126,7 +127,7 @@ impl Region {
             return Some((0, sides));
         }
 
-        for dir in DIRS {
+        for dir in DIRS_WDIAG {
             let pos = (pos.0 as i64 + dir.0, pos.1 as i64 + dir.1);
 
             if let Some((narea, nsides)) = self.traverse_discounted(pos) {
