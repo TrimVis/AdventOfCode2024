@@ -229,24 +229,24 @@ pub fn solve_p1() -> usize {
         .map(|n| n.parse::<u64>().unwrap())
         .collect();
 
-    // let flatmap = || blink_flatmap(stones.clone(), 25);
-    // time_function!(flatmap);
-    // let flatmap2 = || blink_flatmap2(stones.clone(), 25);
-    // time_function!(flatmap2);
-    // let vecinplace = || blink_vecinplace(stones.clone(), 25);
-    // time_function!(vecinplace);
-    // let vecinplace2 = || blink_vecinplace2(stones.clone(), 25);
-    // let vecinplace_lessstr = || blink_vecinplace_lessstr(stones.clone(), 25);
-    // time_function!(vecinplace_lessstr);
-    // let vecinplace_nostr = || blink_vecinplace_nostr(stones.clone(), 25);
-    // time_function!(vecinplace_nostr);
-    // let vecinplace_nostr_noredund = || blink_vecinplace_nostr_noredund(stones.clone(), 25);
-    // time_function!(vecinplace_nostr_noredund);
+    let flatmap = || blink_flatmap(stones.clone(), 25);
+    time_function!(flatmap);
+    let flatmap2 = || blink_flatmap2(stones.clone(), 25);
+    time_function!(flatmap2);
+    let vecinplace = || blink_vecinplace(stones.clone(), 25);
+    time_function!(vecinplace);
+    let vecinplace2 = || blink_vecinplace2(stones.clone(), 25);
+    let vecinplace_lessstr = || blink_vecinplace_lessstr(stones.clone(), 25);
+    time_function!(vecinplace_lessstr);
+    let vecinplace_nostr = || blink_vecinplace_nostr(stones.clone(), 25);
+    time_function!(vecinplace_nostr);
+    let vecinplace_nostr_noredund = || blink_vecinplace_nostr_noredund(stones.clone(), 25);
+    time_function!(vecinplace_nostr_noredund);
 
-    // println!(
-    //     "expected result: {}",
-    //     blink_vecinplace_nostr(stones.clone(), 6)
-    // );
+    println!(
+        "expected result: {}",
+        blink_vecinplace_nostr(stones.clone(), 6)
+    );
 
     //blink_vecinplace_nostr(stones, 25)
     blink_vecinplace_nostr_noredund(stones, 25)
