@@ -1,8 +1,6 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-};
+use std::{collections::HashSet, fs};
 
+const DIRS: [(i64, i64); 4] = [(0, 1), (1, 0), (0, -1), (-1, 0)];
 const INPUT_FILE: &str = "inputs/day12.test";
 // const INPUT_FILE: &str = "inputs/day12.input";
 
@@ -45,8 +43,8 @@ impl Region {
         }
         self.visited[pos.1][pos.0] = true;
 
-        let dirs: [(i64, i64); 4] = [(0, 1), (1, 0), (0, -1), (-1, 0)];
-        for dir in dirs {
+        let DIRS: [(i64, i64); 4] = [(0, 1), (1, 0), (0, -1), (-1, 0)];
+        for dir in DIRS {
             let pos = (pos.0 as i64 + dir.0, pos.1 as i64 + dir.1);
             if pos.1 < 0
                 || pos.0 < 0
@@ -96,8 +94,7 @@ impl Region {
         }
         self.visited[pos.1][pos.0] = true;
 
-        let dirs: [(i64, i64); 4] = [(0, 1), (1, 0), (0, -1), (-1, 0)];
-        for dir in dirs {
+        for dir in DIRS {
             let pos = (pos.0 as i64 + dir.0, pos.1 as i64 + dir.1);
 
             let (narea, nsides) = self.traverse_discounted((pos.0 as usize, pos.1 as usize));
