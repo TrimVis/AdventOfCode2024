@@ -1,6 +1,6 @@
 use std::{collections::HashSet, fs};
 
-const DIRS: [(i64, i64); 4] = [(0, 1), (1, 0), (0, -1), (-1, 0)];
+const DIRS: [(i64, i64); 4] = [(0, -1), (1, 0), (0, 1), (-1, 0)];
 const INPUT_FILE: &str = "inputs/day12.test";
 // const INPUT_FILE: &str = "inputs/day12.input";
 
@@ -22,10 +22,7 @@ impl Region {
             .iter()
             .map(|row| row.iter().map(|&e| e == id).collect())
             .collect();
-        let visited: Vec<Vec<bool>> = map
-            .iter()
-            .map(|row| row.iter().map(|_| false).collect())
-            .collect();
+        let visited: Vec<Vec<bool>> = vec![vec![false; map[0].len() + 2]; map.len() + 2];
 
         Region { id, map, visited }
     }
@@ -43,14 +40,9 @@ impl Region {
         }
         self.visited[pos.1][pos.0] = true;
 
-        let DIRS: [(i64, i64); 4] = [(0, 1), (1, 0), (0, -1), (-1, 0)];
         for dir in DIRS {
             let pos = (pos.0 as i64 + dir.0, pos.1 as i64 + dir.1);
-            if pos.1 < 0
-                || pos.0 < 0
-                || pos.1 >= self.map.len() as i64
-                || pos.0 >= self.map[0].len() as i64
-            {
+            if self.oobounds(pos) {
                 perimeter += 1;
                 continue;
             }
@@ -77,41 +69,80 @@ impl Region {
         price
     }
 
-    fn inbounds(&self, pos: (i64, i64)) -> bool {
+    fn oobounds(&self, pos: (i64, i64)) -> bool {
         pos.1 < 0
             || pos.0 < 0
-            || pos.1 >= self.map.len() as i64
-            || pos.0 >= self.map[0].len() as i64
+            || pos.1 >= (self.map.len() as i64)
+            || pos.0 >= (self.map[0].len() as i64)
     }
 
-    fn traverse_discounted(&mut self, pos: (usize, usize)) -> (u64, u64) {
-        let curr_pos = self.map[pos.1][pos.0];
-        let mut area = curr_pos as u64;
-        let mut sides = 0;
+    fn check_visited(&mut self, pos: (i64, i64)) -> bool {
+        let pos = ((pos.1 + 1) as usize, (pos.0 + 1) as usize);
 
-        if !curr_pos || !self.inbounds((pos.0 as i64, pos.1 as i64)) || self.visited[pos.1][pos.0] {
-            return (0, 0);
-        }
+        let res = self.visited[pos.1][pos.0];
         self.visited[pos.1][pos.0] = true;
+        res
+    }
+
+    fn check_pos(&self, pos: (i64, i64)) -> bool {
+        if !self.oobounds(pos) {
+            self.map[pos.1 as usize][pos.0 as usize]
+        } else {
+            false
+        }
+    }
+
+    fn check_dpos(&self, pos: (i64, i64), dir: (i64, i64)) -> bool {
+        let pos = (pos.0 as i64 + dir.0, pos.1 as i64 + dir.1);
+        self.check_pos(pos)
+    }
+
+    fn traverse_discounted(&mut self, pos: (i64, i64)) -> Option<(u64, u64)> {
+        if self.check_visited(pos) {
+            return None;
+        }
+
+        let curr_pos = self.check_pos(pos);
+        let mut area = curr_pos as u64;
+        let mut sides = DIRS
+            .iter()
+            .zip(DIRS.iter().cycle().skip(1))
+            .filter(|&(&d0, &d1)| {
+                if curr_pos {
+                    !self.check_dpos(pos, d0) && !self.check_dpos(pos, d1)
+                } else {
+                    self.check_dpos(pos, d0) && self.check_dpos(pos, d1)
+                }
+            })
+            .count() as u64;
+        if sides > 0 {
+            println!(
+                "{}: Position {:?} ({}) is a edge {}",
+                self.id, pos, curr_pos, sides
+            );
+        }
+
+        if !curr_pos {
+            return Some((0, sides));
+        }
 
         for dir in DIRS {
             let pos = (pos.0 as i64 + dir.0, pos.1 as i64 + dir.1);
 
-            let (narea, nsides) = self.traverse_discounted((pos.0 as usize, pos.1 as usize));
-            area += narea;
-            sides += nsides;
+            if let Some((narea, nsides)) = self.traverse_discounted(pos) {
+                area += narea;
+                sides += nsides;
+            }
         }
 
-        (area, sides)
+        Some((area, sides))
     }
 
     fn get_discounted_price(&mut self) -> u64 {
         let mut price = 0;
         for y in 0..self.map.len() {
             for x in 0..self.map[0].len() {
-                if !self.visited[y][x] {
-                    let (area, no_sides) = self.traverse_discounted((x, y));
-
+                if let Some((area, no_sides)) = self.traverse_discounted((x as i64, y as i64)) {
                     // Finally compute the discounted price
                     let iprice = area * no_sides;
                     price += iprice;
