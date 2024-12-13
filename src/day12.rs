@@ -1,7 +1,16 @@
 use std::{collections::HashSet, fs};
 
 const DIRS: [(i64, i64); 4] = [(0, -1), (1, 0), (0, 1), (-1, 0)];
-const DIRS_WDIAG: [(i64, i64); 6] = [(0, -1), (1, 0), (0, 1), (-1, 0), (1, 1), (-1, -1)];
+const DIRS_WDIAG: [(i64, i64); 8] = [
+    (0, -1),
+    (1, 0),
+    (0, 1),
+    (-1, 0),
+    (1, 1),
+    (-1, -1),
+    (-1, 1),
+    (1, -1),
+];
 const INPUT_FILE: &str = "inputs/day12.test";
 // const INPUT_FILE: &str = "inputs/day12.input";
 
@@ -78,6 +87,13 @@ impl Region {
     }
 
     fn check_visited(&mut self, pos: (i64, i64)) -> bool {
+        if pos.1 < -1
+            || pos.1 > self.map.len() as i64
+            || pos.0 < -1
+            || pos.0 > self.map[0].len() as i64
+        {
+            return true;
+        }
         let pos = ((pos.1 + 1) as usize, (pos.0 + 1) as usize);
 
         let res = self.visited[pos.1][pos.0];
@@ -123,16 +139,15 @@ impl Region {
             );
         }
 
-        if !curr_pos {
-            return Some((0, sides));
-        }
+        if curr_pos {
+            for dir in DIRS_WDIAG {
+                let pos = (pos.0 + dir.0, pos.1 + dir.1);
+                // println!("{:?}", pos);
 
-        for dir in DIRS_WDIAG {
-            let pos = (pos.0 as i64 + dir.0, pos.1 as i64 + dir.1);
-
-            if let Some((narea, nsides)) = self.traverse_discounted(pos) {
-                area += narea;
-                sides += nsides;
+                if let Some((narea, nsides)) = self.traverse_discounted(pos) {
+                    area += narea;
+                    sides += nsides;
+                }
             }
         }
 

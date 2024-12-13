@@ -2,6 +2,7 @@ mod day1;
 mod day10;
 mod day11;
 mod day12;
+mod day13;
 mod day2;
 mod day3;
 mod day4;
@@ -28,7 +29,7 @@ fn get_day_solve_fn(day: &str) -> Option<fn()> {
         "10" => Some(day10::solve),
         "11" => Some(day11::solve),
         "12" => Some(day12::solve),
-        "13" => None,
+        "13" => Some(day13::solve),
         "14" => None,
         "15" => None,
         "16" => None,
