@@ -1,4 +1,5 @@
-use colored::{ColoredString, Colorize};
+use colored::{Color, ColoredString, Colorize, CustomColor};
+use crossterm::style::Stylize;
 use std::fs;
 use std::{thread, time::Duration};
 
@@ -87,11 +88,15 @@ impl Field {
     fn to_string(&self) -> ColoredString {
         match self {
             Self::Empty => Colorize::dimmed(" "),
-            Self::Wall => Colorize::dimmed("#"),
-            Self::Robot => Colorize::red("@"),
-            Self::Box => Colorize::blue("█"),
-            Self::BoxLeft => Colorize::blue("["),
-            Self::BoxRight => Colorize::blue("]"),
+            Self::Wall => Colorize::custom_color("█", CustomColor::new(55, 55, 55)),
+            Self::Robot => Colorize::bright_magenta("@"),
+            Self::Box => Colorize::bright_blue("O").on_custom_color(CustomColor::new(0, 0, 155)),
+            Self::BoxLeft => {
+                Colorize::bright_blue("[").on_custom_color(CustomColor::new(0, 0, 155))
+            }
+            Self::BoxRight => {
+                Colorize::bright_blue("]").on_custom_color(CustomColor::new(0, 0, 155))
+            }
         }
     }
 }
@@ -189,13 +194,12 @@ impl Map {
 
         let target = self.get_pos(target_pos);
         match target {
-            Field::Wall => false,
+            Field::Wall | Field::Robot => false,
             Field::Empty => true,
             Field::Box => self.check_move(target_pos, mv),
             Field::BoxLeft | Field::BoxRight => {
-                // Try to move the box away
                 self.check_move(target_pos, mv) && {
-                    if [Move::Up, Move::Down].contains(mv) {
+                    ![Move::Up, Move::Down].contains(mv) || {
                         let mut other_box_pos = target_pos;
                         if target == Field::BoxLeft {
                             other_box_pos = other_box_pos + Coordinate::new(1, 0)
@@ -203,12 +207,9 @@ impl Map {
                             other_box_pos = other_box_pos + Coordinate::new(-1, 0)
                         };
                         self.check_move(other_box_pos, mv)
-                    } else {
-                        true
                     }
                 }
             }
-            Field::Robot => false,
         }
     }
 
@@ -239,14 +240,12 @@ impl Map {
             Field::BoxLeft | Field::BoxRight => {
                 if self.check_move(target_pos, mv) {
                     if [Move::Up, Move::Down].contains(mv) {
-                        let mut other_box_pos = target_pos;
-                        if target == Field::BoxLeft {
-                            other_box_pos = other_box_pos + Coordinate::new(1, 0)
-                        } else {
-                            other_box_pos = other_box_pos + Coordinate::new(-1, 0)
+                        let box_offset = match target {
+                            Field::BoxLeft => Coordinate::new(1, 0),
+                            _ => Coordinate::new(-1, 0),
                         };
-                        if self.check_move(other_box_pos, mv) {
-                            let _ = self.move_field(other_box_pos, mv);
+                        if self.check_move(target_pos + box_offset, mv) {
+                            let _ = self.move_field(target_pos + box_offset, mv);
                         } else {
                             return Err("Right side of box blocked");
                         }
@@ -336,7 +335,7 @@ pub fn solve_p2() -> i64 {
         });
     let mut map = Map::new(map);
     let instructions = instructions.iter().flatten().collect();
-    let visualize = false;
+    let visualize = true;
     map.step_many(&instructions, visualize);
 
     println!("{}\n", map.ascii_art(),);
