@@ -1,11 +1,11 @@
 use std::{cmp::min, fs, ops::Add};
 
 use itertools::Itertools;
-use num::{
-    integer::{gcd, lcm},
-    pow::Pow,
-    Float,
-};
+// use num::{
+//     integer::{gcd, lcm},
+//     pow::Pow,
+//     Float,
+// };
 
 const INPUT_FILE: &str = "inputs/day13.test";
 // const INPUT_FILE: &str = "inputs/day13.input";
@@ -206,6 +206,7 @@ pub fn solve_p1() -> Num {
     result
 }
 
+#[allow(dead_code)]
 pub fn solve_p2() -> Num {
     let content = fs::read_to_string(INPUT_FILE).expect("Could not read input file");
 
