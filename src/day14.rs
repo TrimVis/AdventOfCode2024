@@ -15,7 +15,6 @@ const INPUT_FILE: &str = "inputs/day14.input";
 
 pub fn solve() {
     println!("Part 1: {}", solve_p1());
-    visualize_p2();
     println!("Part 2: {}", solve_p2());
 }
 
@@ -99,7 +98,7 @@ impl Robots {
         String::from_iter(bitmap.iter().flatten())
     }
 
-    fn check_square(&self) -> bool {
+    fn check_line(&self) -> bool {
         let rows = self.map_corner.y as usize;
         let cols = self.map_corner.x as usize;
 
@@ -110,28 +109,23 @@ impl Robots {
             grid[y][x] = true;
         });
 
-        let lower = (0.3 * (self.map_corner.x as f64)) as usize;
+        let size = (0.15 * (self.map_corner.x as f64)) as usize;
 
         // Check for square outlines
         for top in 0..rows {
-            for left in 0..cols {
-                // Iterate over all possible top-left corners
-                for size in lower..=((rows - top).min(cols - left)) {
-                    let bottom = top + size - 1;
-                    let right = left + size - 1;
+            for left in 0..(cols - size) {
+                let bottom = top + size - 1;
+                let right = left + size - 1;
 
-                    if bottom >= rows
-                        || right >= cols
-                        || !grid[top][left..=right].iter().all(|&x| x)
-                        || !grid[bottom][left..=right].iter().all(|&x| x)
-                        || !grid[top..=bottom].iter().all(|row| row[left])
-                        || !grid[top..=bottom].iter().all(|row| row[right])
-                    {
-                        continue;
-                    }
-
-                    return true;
+                if bottom >= rows
+                    || right >= cols
+                    || (!grid[top][left..=right].iter().all(|&x| x)
+                        && !grid[bottom][left..=right].iter().all(|&x| x))
+                {
+                    continue;
                 }
+
+                return true;
             }
         }
 
@@ -208,25 +202,6 @@ pub fn solve_p2() -> i64 {
     let content = fs::read_to_string(INPUT_FILE).expect("Could not read input file");
     let mut robots = Robots::from_string(content.as_str(), corner);
 
-    let mut frame = 0;
-    loop {
-        frame += 1;
-        robots.step(1);
-        if robots.check_square() {
-            break;
-        }
-    }
-
-    frame
-}
-
-pub fn visualize_p2() -> () {
-    // let corner = Coordinate::new(11, 7);
-    let corner = Coordinate::new(101, 103);
-
-    let content = fs::read_to_string(INPUT_FILE).expect("Could not read input file");
-    let mut robots = Robots::from_string(content.as_str(), corner);
-
     // Visualizes the tree appearing
     let mut sleep_time = 100000000;
     let mut paused = false;
@@ -235,34 +210,6 @@ pub fn visualize_p2() -> () {
     let mut term = Term::init();
     let mut frame = 0;
     loop {
-        if !paused {
-            let step = if reverse { -1 } else { 1 };
-            frame += step;
-            robots.step(step);
-        }
-        let square_detected = robots.check_square();
-        paused |= square_detected;
-
-        if frame % skip_frames != 0 && !paused && !square_detected {
-            continue;
-        }
-
-        let fb = format!(
-            "[Frame {:4.} (+={})] \t\t [{}]{} \t\t\t {} \n{}",
-            frame,
-            skip_frames,
-            if paused { "PAUSED" } else { "RUNNING" },
-            if reverse { "(REVERSING)" } else { "" },
-            if square_detected {
-                "--------- DETECTED A SQUARE ----------"
-            } else {
-                ""
-            },
-            robots.ascii_art(true),
-        );
-
-        term.draw(&fb);
-        thread::sleep(Duration::from_nanos(sleep_time));
         if event::poll(Duration::from_nanos(sleep_time)).unwrap() {
             if let Event::Key(KeyEvent { code, .. }) = event::read().unwrap() {
                 match code {
@@ -271,8 +218,9 @@ pub fn visualize_p2() -> () {
                     KeyCode::Char('r') => reverse = !reverse,
                     KeyCode::PageUp => skip_frames *= 2,
                     KeyCode::PageDown => skip_frames = (skip_frames / 2).max(1),
-                    KeyCode::Up => sleep_time /= 2,
+                    KeyCode::Up => sleep_time = (sleep_time / 2).max(1),
                     KeyCode::Down => sleep_time *= 2,
+                    KeyCode::Enter => return frame,
                     KeyCode::Left => {
                         frame -= 1;
                         robots.step(-1);
@@ -285,5 +233,35 @@ pub fn visualize_p2() -> () {
                 }
             }
         }
+        if !paused {
+            let step = if reverse { -1 } else { 1 };
+            frame += step;
+            robots.step(step);
+        }
+        let line_detected = robots.check_line();
+        paused |= line_detected;
+
+        if frame % skip_frames != 0 && !paused {
+            continue;
+        }
+
+        let fb = format!(
+            "[Frame {:4.} (+={})] \t\t [{}]{} \t\t\t {} \n{}",
+            frame,
+            skip_frames,
+            if paused { "PAUSED" } else { "RUNNING" },
+            if reverse { "(REVERSING)" } else { "" },
+            if line_detected {
+                "--------- DETECTED A LINE ----------"
+            } else {
+                ""
+            },
+            robots.ascii_art(true),
+        );
+
+        term.draw(&fb);
+        thread::sleep(Duration::from_nanos(sleep_time));
     }
+
+    -1
 }
