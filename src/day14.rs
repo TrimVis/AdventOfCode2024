@@ -1,14 +1,8 @@
-use crossterm::{
-    cursor,
-    event::{self, Event, KeyCode, KeyEvent},
-    terminal::{self, ClearType},
-    ExecutableCommand,
-};
-use std::io::{stdout, Write};
-use std::{fs, io::Stdout};
+use crossterm::event::{self, Event, KeyCode, KeyEvent};
+use std::fs;
 use std::{thread, time::Duration};
 
-use crate::util::Coordinate;
+use crate::util::{Coordinate, Term};
 
 // const INPUT_FILE: &str = "inputs/day14.test";
 const INPUT_FILE: &str = "inputs/day14.input";
@@ -164,35 +158,6 @@ pub fn solve_p1() -> usize {
         final_positions.push(robot.position);
     }
     get_safety_factor(corner, final_positions)
-}
-
-struct Term {
-    stdout: Stdout,
-}
-impl Term {
-    fn init() -> Self {
-        let mut stdout = stdout();
-        terminal::enable_raw_mode().unwrap();
-        stdout.execute(terminal::Clear(ClearType::All)).unwrap();
-        stdout.execute(cursor::Hide).unwrap();
-
-        Term { stdout }
-    }
-
-    fn draw(&mut self, content: &String) {
-        for (i, line) in content.lines().enumerate() {
-            self.stdout.execute(cursor::MoveTo(0, i as u16)).unwrap();
-            write!(self.stdout, "{}", line).unwrap();
-        }
-        self.stdout.flush().unwrap();
-    }
-}
-
-impl Drop for Term {
-    fn drop(&mut self) {
-        self.stdout.execute(cursor::Show).unwrap();
-        terminal::disable_raw_mode().unwrap();
-    }
 }
 
 pub fn solve_p2() -> i64 {

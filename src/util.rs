@@ -1,3 +1,10 @@
+use crossterm::{
+    cursor,
+    terminal::{self, ClearType},
+    ExecutableCommand,
+};
+use std::io::Stdout;
+use std::io::{stdout, Write};
 use std::ops::{Add, Div, Mul, Rem};
 
 #[macro_export]
@@ -75,5 +82,34 @@ impl<T: Mul + Add + Rem<Output = T> + Div + Copy> Rem for Coordinate<T> {
             x: self.x % rhs.x,
             y: self.y % rhs.y,
         };
+    }
+}
+
+pub struct Term {
+    stdout: Stdout,
+}
+impl Term {
+    pub fn init() -> Self {
+        let mut stdout = stdout();
+        terminal::enable_raw_mode().unwrap();
+        stdout.execute(terminal::Clear(ClearType::All)).unwrap();
+        stdout.execute(cursor::Hide).unwrap();
+
+        Term { stdout }
+    }
+
+    pub fn draw(&mut self, content: &String) {
+        for (i, line) in content.lines().enumerate() {
+            self.stdout.execute(cursor::MoveTo(0, i as u16)).unwrap();
+            write!(self.stdout, "{}", line).unwrap();
+        }
+        self.stdout.flush().unwrap();
+    }
+}
+
+impl Drop for Term {
+    fn drop(&mut self) {
+        self.stdout.execute(cursor::Show).unwrap();
+        terminal::disable_raw_mode().unwrap();
     }
 }
