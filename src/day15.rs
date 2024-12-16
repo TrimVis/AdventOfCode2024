@@ -184,8 +184,12 @@ impl Map {
     }
 
     fn step(&mut self, mv: &Move) -> Result<(), String> {
-        let _ = self.move_fields(&vec![self.robot_position], mv);
-        // let _ = self.move_field(self.robot_position, mv);
+        // FIXME: This approach does not work, although it is elegant
+        // let mut moves = vec![];
+        // if let Ok(()) = self.find_moves(&vec![self.robot_position], mv, &mut moves) {
+        //     self.apply_moves(moves);
+        // }
+        let _ = self.move_field(self.robot_position, mv);
         Ok(())
     }
 
@@ -216,12 +220,30 @@ impl Map {
         }
     }
 
-    fn move_fields(
-        &mut self,
+    fn apply_moves(&mut self, moves: Vec<(Coordinate<i64>, Coordinate<i64>)>) {
+        let dst_values = moves
+            .iter()
+            .map(|&(src, dst)| (self.get_pos(src), self.get_pos(dst)))
+            .collect::<Vec<(Field, Field)>>();
+
+        for (&(src, dst), (src_value, dst_value)) in moves.iter().zip(dst_values).rev() {
+            self.map[src.y as usize][src.x as usize] = dst_value;
+            self.map[dst.y as usize][dst.x as usize] = src_value;
+
+            if src_value == Field::Robot {
+                self.robot_position = dst;
+            }
+        }
+    }
+
+    fn find_moves(
+        &self,
         positions: &Vec<Coordinate<i64>>,
         mv: &Move,
+        moves: &mut Vec<(Coordinate<i64>, Coordinate<i64>)>,
     ) -> Result<(), Vec<String>> {
         let destinations = positions.iter().map(|pos| *pos + mv.get_dir_coord());
+
         for dst in destinations.clone() {
             let error = |msg: &'static str, errs: Vec<String>| {
                 let mut errs = errs;
@@ -239,35 +261,35 @@ impl Map {
                 (_, Field::Wall) => return error("Move into wall", vec![]),
                 (Move::Up | Move::Down, Field::BoxLeft) => {
                     let v = vec![dst, dst + Coordinate::new(1, 0)];
-                    if let Err(errs) = self.move_fields(&v, mv) {
-                        return error("Left Side of Box is blocked", errs);
+                    match self.find_moves(&v, mv, moves) {
+                        Err(errs) => return error("Left Side of Box is blocked", errs),
+                        _ => {}
                     }
                 }
                 (Move::Up | Move::Down, Field::BoxRight) => {
                     let v = vec![dst, dst + Coordinate::new(-1, 0)];
-                    if let Err(errs) = self.move_fields(&v, mv) {
-                        return error("Right Side of Box is blocked", errs);
+                    match self.find_moves(&v, mv, moves) {
+                        Err(errs) => return error("Right Side of Box is blocked", errs),
+                        _ => {}
                     }
                 }
                 (_, Field::Box | Field::BoxLeft | Field::BoxRight) => {
-                    if let Err(errs) = self.move_fields(&vec![dst], mv) {
-                        return error("Box is blocked", errs);
+                    match self.find_moves(&vec![dst], mv, moves) {
+                        Err(errs) => return error("Box is blocked", errs),
+                        _ => {}
                     }
                 }
                 (_, Field::Robot) => unreachable!("Tried to move towards robot"),
             }
         }
 
-        for (&src, dst) in positions.iter().zip(destinations) {
-            let src_value = self.get_pos(src);
-            self.map[src.y as usize][src.x as usize] = Field::Empty;
-            self.map[dst.y as usize][dst.x as usize] = src_value;
-
-            if src_value == Field::Robot {
-                self.robot_position = dst;
-            }
-        }
-
+        moves.extend(
+            positions
+                .iter()
+                .zip(destinations)
+                .map(|(&src, dst)| (src, dst))
+                .collect::<Vec<_>>(),
+        );
         return Ok(());
     }
     fn move_field(&mut self, pos: Coordinate<i64>, mv: &Move) -> Result<(), &'static str> {
@@ -392,7 +414,7 @@ pub fn solve_p2() -> i64 {
         });
     let mut map = Map::new(map);
     let instructions = instructions.iter().flatten().collect();
-    let visualize = true;
+    let visualize = false;
     map.step_many(&instructions, visualize);
 
     println!("{}\n", map.ascii_art(),);
