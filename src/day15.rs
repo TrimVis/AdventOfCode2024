@@ -1,5 +1,4 @@
-use colored::{Color, ColoredString, Colorize, CustomColor};
-use crossterm::style::Stylize;
+use colored::{ColoredString, Colorize, CustomColor};
 use std::fs;
 use std::{thread, time::Duration};
 
@@ -177,13 +176,17 @@ impl Map {
             }
         } else {
             for mv in moves {
-                let _ = self.step(mv);
+                if let Err(e) = self.step(mv) {
+                    println!("Encountered an error: \n{}", e);
+                }
             }
         }
     }
 
-    fn step(&mut self, mv: &Move) -> Result<(), &'static str> {
-        self.move_field(self.robot_position, mv)
+    fn step(&mut self, mv: &Move) -> Result<(), String> {
+        let _ = self.move_fields(&vec![self.robot_position], mv);
+        // let _ = self.move_field(self.robot_position, mv);
+        Ok(())
     }
 
     fn check_move(&self, pos: Coordinate<i64>, mv: &Move) -> bool {
@@ -213,6 +216,60 @@ impl Map {
         }
     }
 
+    fn move_fields(
+        &mut self,
+        positions: &Vec<Coordinate<i64>>,
+        mv: &Move,
+    ) -> Result<(), Vec<String>> {
+        let destinations = positions.iter().map(|pos| *pos + mv.get_dir_coord());
+        for dst in destinations.clone() {
+            let error = |msg: &'static str, errs: Vec<String>| {
+                let mut errs = errs;
+                errs.push(format!("At ({},{}): {}", dst.x, dst.y, msg));
+                Err(errs)
+            };
+
+            if !self.inbounds(dst) {
+                return error("Out of bounds", vec![]);
+            }
+
+            let dst_value = self.get_pos(dst);
+            match (mv, dst_value) {
+                (_, Field::Empty) => {}
+                (_, Field::Wall) => return error("Move into wall", vec![]),
+                (Move::Up | Move::Down, Field::BoxLeft) => {
+                    let v = vec![dst, dst + Coordinate::new(1, 0)];
+                    if let Err(errs) = self.move_fields(&v, mv) {
+                        return error("Left Side of Box is blocked", errs);
+                    }
+                }
+                (Move::Up | Move::Down, Field::BoxRight) => {
+                    let v = vec![dst, dst + Coordinate::new(-1, 0)];
+                    if let Err(errs) = self.move_fields(&v, mv) {
+                        return error("Right Side of Box is blocked", errs);
+                    }
+                }
+                (_, Field::Box | Field::BoxLeft | Field::BoxRight) => {
+                    if let Err(errs) = self.move_fields(&vec![dst], mv) {
+                        return error("Box is blocked", errs);
+                    }
+                }
+                (_, Field::Robot) => unreachable!("Tried to move towards robot"),
+            }
+        }
+
+        for (&src, dst) in positions.iter().zip(destinations) {
+            let src_value = self.get_pos(src);
+            self.map[src.y as usize][src.x as usize] = Field::Empty;
+            self.map[dst.y as usize][dst.x as usize] = src_value;
+
+            if src_value == Field::Robot {
+                self.robot_position = dst;
+            }
+        }
+
+        return Ok(());
+    }
     fn move_field(&mut self, pos: Coordinate<i64>, mv: &Move) -> Result<(), &'static str> {
         let target_pos = pos + mv.get_dir_coord();
         if !self.inbounds(target_pos) {
