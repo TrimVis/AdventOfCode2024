@@ -131,9 +131,10 @@ impl Dp {
 
     fn solve(&mut self) -> i64 {
         for dir in [Dir::North, Dir::South, Dir::West, Dir::East] {
-            self.dp(self.end_position + dir.to_coord(), dir, 1);
+            // self.dp(self.end_position + dir.to_coord(), dir, 1);
         }
-        self.get_t(self.start_pos).unwrap()
+        // self.get_t(self.start_pos).unwrap()
+        0
     }
 }
 

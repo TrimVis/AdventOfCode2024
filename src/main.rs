@@ -7,6 +7,8 @@ mod day14;
 mod day15;
 mod day16;
 mod day2;
+mod day21;
+mod day22;
 mod day3;
 mod day4;
 mod day5;
@@ -40,8 +42,8 @@ fn get_day_solve_fn(day: &str) -> Option<fn()> {
         "18" => None,
         "19" => None,
         "20" => None,
-        "21" => None,
-        "22" => None,
+        "21" => Some(day21::solve),
+        "22" => Some(day22::solve),
         "23" => None,
         "24" => None,
         _ => unimplemented!("The day '{}' is not supported", day),
