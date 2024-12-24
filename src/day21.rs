@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs};
 
-const INPUT_FILE: &str = "inputs/day21.test";
-// const INPUT_FILE: &str = "inputs/day21.input";
+// const INPUT_FILE: &str = "inputs/day21.test";
+const INPUT_FILE: &str = "inputs/day21.input";
 
 pub fn solve() {
     println!("Part 1: {}", solve_p1());
@@ -18,6 +18,38 @@ fn generate_moves() -> HashMap<(char, char), String> {
         ['x', '0', 'A'],
     ];
 
+    let create_move_str = |(x_start, x_end): (usize, usize), (y_start, y_end): (usize, usize)| {
+        let x_diff = x_start as i64 - x_end as i64;
+        let x_dir = if x_diff == 0 {
+            ""
+        } else if x_diff > 0 {
+            "<"
+        } else {
+            ">"
+        };
+        let x_mv = x_dir.repeat(x_diff.abs() as usize);
+
+        let y_diff = y_start as i64 - y_end as i64;
+        let y_dir = if y_diff == 0 {
+            ""
+        } else if y_diff > 0 {
+            "^"
+        } else {
+            "v"
+        };
+        let y_mv = y_dir.repeat(y_diff.abs() as usize);
+
+        // Always pick the movement option that does not walk across the illegal 'x'
+        let target_x = x_start as i64 - x_diff;
+        let mv = if numpad[y_start][target_x as usize] == 'x' {
+            y_mv + x_mv.as_str()
+        } else {
+            x_mv + y_mv.as_str()
+        };
+
+        mv + "A"
+    };
+
     for y_start in 0..numpad.len() {
         for x_start in 0..numpad[y_start].len() {
             for y_end in 0..numpad.len() {
@@ -28,31 +60,8 @@ fn generate_moves() -> HashMap<(char, char), String> {
                         continue;
                     }
 
-                    let y_diff = y_start as i64 - y_end as i64;
-                    let x_diff = x_start as i64 - x_end as i64;
-                    let mut mv = "".to_string();
-                    if y_diff > 0 {
-                        mv += "^".repeat(y_diff.abs() as usize).as_str();
-                        if x_diff > 0 {
-                            mv += "<".repeat(x_diff.abs() as usize).as_str();
-                        } else if x_diff < 0 {
-                            mv += ">".repeat(x_diff.abs() as usize).as_str();
-                        }
-                    } else if y_diff < 0 {
-                        if x_diff > 0 {
-                            mv += "<".repeat(x_diff.abs() as usize).as_str();
-                        } else if x_diff < 0 {
-                            mv += ">".repeat(x_diff.abs() as usize).as_str();
-                        }
-                        mv += "v".repeat(y_diff.abs() as usize).as_str();
-                    } else {
-                        if x_diff > 0 {
-                            mv += "<".repeat(x_diff.abs() as usize).as_str();
-                        } else if x_diff < 0 {
-                            mv += ">".repeat(x_diff.abs() as usize).as_str();
-                        }
-                    }
-                    mv += "A";
+                    let mv = create_move_str((x_start, x_end), (y_start, y_end));
+
                     moves.insert((start, end), mv);
                 }
             }
@@ -71,20 +80,7 @@ fn generate_moves() -> HashMap<(char, char), String> {
                         continue;
                     }
 
-                    let y_diff = y_start as i64 - y_end as i64;
-                    let x_diff = x_start as i64 - x_end as i64;
-                    let mut mv = "".to_string();
-                    if x_diff > 0 {
-                        mv += ">".repeat(x_diff.abs() as usize).as_str();
-                    } else if x_diff < 0 {
-                        mv += "<".repeat(x_diff.abs() as usize).as_str();
-                    }
-                    if y_diff > 0 {
-                        mv += "^".repeat(y_diff.abs() as usize).as_str();
-                    } else if y_diff < 0 {
-                        mv += "v".repeat(y_diff.abs() as usize).as_str();
-                    }
-                    mv += "A";
+                    let mv = create_move_str((x_start, x_end), (y_start, y_end));
                     moves.insert((start, end), mv);
                 }
             }
@@ -94,7 +90,7 @@ fn generate_moves() -> HashMap<(char, char), String> {
     moves
 }
 
-pub fn solve_p1() -> i64 {
+pub fn solve_p1() -> usize {
     let content = fs::read_to_string(INPUT_FILE).expect("Could not read input file");
 
     let moves = generate_moves();
@@ -102,7 +98,7 @@ pub fn solve_p1() -> i64 {
     let mut result = 0;
 
     for line in content.lines() {
-        println!("Input: {}", line);
+        // println!("Input: {}", line);
 
         let mut curr_line = line.to_string();
         for _ in 0..3 {
@@ -112,7 +108,7 @@ pub fn solve_p1() -> i64 {
             for (start, dest) in pairs {
                 curr_moves += moves[&(start, dest)].as_str();
             }
-            println!("Intermediate: {}", curr_moves);
+            // println!("Intermediate: {}", curr_moves);
 
             curr_line = curr_moves;
         }
@@ -121,10 +117,10 @@ pub fn solve_p1() -> i64 {
         let num_part = line.replace("A", "").parse::<usize>().unwrap();
         let res = len * num_part;
         result += res;
-        println!("Result: {} ({} * {})", res, len, num_part);
+        // println!("Result: {} ({} * {})", res, len, num_part);
     }
 
-    0
+    result
 }
 
 pub fn solve_p2() -> i64 {
